@@ -56,7 +56,10 @@ jobs:
             cache_postfix: cache-0
 
       - name: Decode keystore
-        run: echo ${{ secrets.ANDROID_KEYSTORE_BASE64 }} | base64 -di > source/f3d/f3d-android-key.jks
+        working-directory: ${{github.workspace}}/source
+        run: |
+          echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > f3d/f3d-android-key.jks
+          ls -l f3d/f3d-android-key.jks
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
