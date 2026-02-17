@@ -1,4 +1,6 @@
-name: Package and sign
+# This workflow builds and uploads signed .apk packages for pull requests and pushes to master.
+# This uses `pull_request_target` event to have access to secrets for pull requests from forks.
+name: Package
 
 on:
   pull_request_target:
@@ -37,7 +39,7 @@ jobs:
   build:
     needs: [cache_lfs]
 
-    name: Build APKs
+    name: Build and upload signed APKs
     runs-on: ubuntu-latest
 
     steps:
@@ -69,7 +71,7 @@ jobs:
         run: |
           echo "${{ secrets.ANDROID_KEYSTORE_BASE64 }}" | base64 --decode > f3d/f3d-android-key.jks
 
-      - name: Build APKs (Release)
+      - name: Build APKs
         working-directory: ${{github.workspace}}/source
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
@@ -79,4 +81,4 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: apk-release
-          path: f3d/build/outputs/apk/release/*.apk
+          path: ./source/f3d/build/outputs/apk/release/*.apk

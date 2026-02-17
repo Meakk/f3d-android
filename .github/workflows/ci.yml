@@ -37,7 +37,7 @@ jobs:
   build:
     needs: [cache_lfs]
 
-    name: Build APKs
+    name: Build development APKs
     runs-on: ubuntu-latest
 
     steps:
@@ -64,6 +64,6 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Build APKs (Debug)
+      - name: Build APKs
         working-directory: ${{github.workspace}}/source
         run: ./gradlew assembleDebug
