@@ -53,4 +53,7 @@ Use the Gradle wrapper to build:
 ./gradlew assembleRelease
 ```
 
+> [!NOTE]
+> In order to build the release package, the signing file should be copied to `f3d/f3d-android-key.jks` and the environment variable `ANDROID_KEYSTORE_PASSWORD` should contain the correct password.
+
 The resulting APK files are located in `f3d/build/outputs/apk/`.
