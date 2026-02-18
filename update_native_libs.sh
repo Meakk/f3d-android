@@ -125,6 +125,7 @@ for arch in "${ARCHS[@]}"; do
     echo "========================================"
 
     CONFIG_CMD="cmake -S /src -B /src/build-${arch} \
+        -DCMAKE_BUILD_TYPE=Release \
         -DF3D_MODULE_EXR=ON \
         -DF3D_MODULE_UI=OFF \
         -DF3D_MODULE_WEBP=ON \
@@ -140,12 +141,14 @@ for arch in "${ARCHS[@]}"; do
 
     BUILD_CMD="cmake --build /src/build-${arch}"
 
+    STRIP_CMD="/ndk/toolchains/llvm/prebuilt/linux-x86_64/bin/llvm-strip --strip-all /src/build-${arch}/lib/libf3d-java.so"
+
     docker run --rm -it \
         -e CMAKE_BUILD_PARALLEL_LEVEL \
         -u "$(id -u):$(id -g)" \
         -v "$CLONE_DIR":/src \
         "ghcr.io/f3d-app/f3d-android-${arch}" \
-        sh -c "$CONFIG_CMD && $BUILD_CMD"
+        sh -c "$CONFIG_CMD && $BUILD_CMD && $STRIP_CMD"
 
     # Copy .so into the Android project
     SO_SRC="$CLONE_DIR/build-${arch}/lib/libf3d-java.so"
