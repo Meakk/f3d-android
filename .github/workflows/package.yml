@@ -24,6 +24,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: "source"
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
           fetch-depth: 1
           lfs: false
 
@@ -47,6 +49,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           path: "source"
+          ref: ${{github.event.pull_request.head.ref}}
+          repository: ${{github.event.pull_request.head.repo.full_name}}
           fetch-depth: 0
           lfs: false
 
@@ -75,7 +79,7 @@ jobs:
         working-directory: ${{github.workspace}}/source
         env:
           ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
-        run: ./gradlew assembleRelease
+        run: ./gradlew assembleRelease --no-configuration-cache
 
       - name: Upload APKs
         uses: actions/upload-artifact@v4
