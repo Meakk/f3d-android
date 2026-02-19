@@ -66,4 +66,4 @@ jobs:
 
       - name: Build APKs
         working-directory: ${{github.workspace}}/source
-        run: ./gradlew assembleDebug
+        run: ./gradlew assembleDebug --no-configuration-cache
