@@ -1,5 +1,6 @@
 package app.f3d.F3D.android
 
+import android.annotation.SuppressLint
 import android.content.Context
 import android.net.Uri
 import android.opengl.GLSurfaceView
@@ -8,6 +9,7 @@ import android.view.ScaleGestureDetector
 import android.view.ScaleGestureDetector.SimpleOnScaleGestureListener
 import app.f3d.F3D.Engine
 import app.f3d.F3D.Image
+import app.f3d.F3D.Log
 import app.f3d.F3D.android.PanGestureDetector.OnPanGestureListener
 import app.f3d.F3D.android.RotateGestureDetector.OnRotateGestureListener
 import java.io.IOException
@@ -33,23 +35,49 @@ class MainView(context: Context) : GLSurfaceView(context) {
     fun start() {
         setEGLConfigChooser(8, 8, 8, 0, 16, 0)
         setEGLContextClientVersion(3)
+        preserveEGLContextOnPause = true
 
         this.setRenderer(Renderer())
         this.renderMode = RENDERMODE_WHEN_DIRTY
     }
 
+    fun loadFile() {
+        if (mActiveUri != null) {
+            try {
+                this@MainView.context.contentResolver.openInputStream(mActiveUri!!)
+                    .use { inputStream ->
+                        if (inputStream != null) {
+                            val fileBytes = ByteArray(inputStream.available())
+                            inputStream.read(fileBytes)
+
+                            this@MainView.mEngine!!.scene.clear()
+                            this@MainView.mEngine!!.scene.add(fileBytes)
+                            this@MainView.mEngine!!.window.camera.resetToBounds()
+                            mActiveUri = null
+                        }
+                    }
+            } catch (e: IOException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
     private inner class Renderer : GLSurfaceView.Renderer {
         override fun onDrawFrame(gl: GL10?) {
-            this@MainView.mEngine!!.getWindow().render()
+            this@MainView.loadFile()
+            this@MainView.mEngine!!.window.render()
         }
 
         override fun onSurfaceChanged(gl: GL10?, width: Int, height: Int) {
-            this@MainView.mEngine!!.getWindow().setSize(width, height)
+            this@MainView.mEngine!!.window.setSize(width, height)
             this@MainView.requestRender()
         }
 
         override fun onSurfaceCreated(gl: GL10?, config: EGLConfig?) {
+
             Engine.autoloadPlugins()
+
+            Log.setVerboseLevel(Log.VerboseLevel.DEBUG)
 
             this@MainView.mEngine = Engine.createExternalEGL()
 
@@ -62,25 +90,9 @@ class MainView(context: Context) : GLSurfaceView(context) {
             this@MainView.mEngine!!.options.toggle("render.effect.antialiasing.enable")
             this@MainView.mEngine!!.options.toggle("render.effect.tone_mapping")
             this@MainView.mEngine!!.options.toggle("render.hdri.ambient")
-            this@MainView.mEngine!!.options.toggle("ui.filename")
             this@MainView.mEngine!!.options.toggle("ui.loader_progress")
 
-            val activeUri = mActiveUri
-            if (activeUri != null) {
-                try {
-                    this@MainView.context.contentResolver.openInputStream(activeUri)
-                        .use { inputStream ->
-                            if (inputStream != null) {
-                                val fileBytes = ByteArray(inputStream.available())
-                                inputStream.read(fileBytes)
-
-                                this@MainView.mEngine!!.scene.add(fileBytes)
-                            }
-                        }
-                } catch (e: IOException) {
-                    e.printStackTrace()
-                }
-            }
+            this@MainView.requestRender()
         }
     }
 
@@ -93,6 +105,16 @@ class MainView(context: Context) : GLSurfaceView(context) {
         return mEngine!!.window.renderToImage()
     }
 
+    fun rotateCamera(azimuth: Double, elevation: Double) {
+        val window = mEngine!!.window
+        val camera = window.camera
+
+        camera.azimuth(azimuth)
+        camera.elevation(elevation)
+
+        requestRender()
+    }
+
     private inner class ScaleListener : SimpleOnScaleGestureListener() {
         override fun onScale(detector: ScaleGestureDetector): Boolean {
             this@MainView.mEngine!!.window.camera
@@ -103,7 +125,7 @@ class MainView(context: Context) : GLSurfaceView(context) {
     }
 
     private inner class PanListener : OnPanGestureListener() {
-        public override fun onPan(detector: PanGestureDetector) {
+        override fun onPan(detector: PanGestureDetector) {
             val window = this@MainView.mEngine!!.window
             val camera = window.camera
 
@@ -137,7 +159,7 @@ class MainView(context: Context) : GLSurfaceView(context) {
     }
 
     private inner class RotateListener : OnRotateGestureListener() {
-        public override fun onRotate(detector: RotateGestureDetector) {
+        override fun onRotate(detector: RotateGestureDetector) {
             val window = this@MainView.mEngine!!.window
             val camera = window.camera
 
@@ -152,13 +174,13 @@ class MainView(context: Context) : GLSurfaceView(context) {
     }
 
     // forward events to rendering thread for it to handle
+    @SuppressLint("ClickableViewAccessibility")
     override fun onTouchEvent(event: MotionEvent): Boolean {
-        queueEvent(Runnable {
+        queueEvent {
             mPanDetector.onTouchEvent(event)
             mScaleDetector.onTouchEvent(event)
             mRotateDetector.onTouchEvent(event)
         }
-        )
 
         return true
     }
